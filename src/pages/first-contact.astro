@@ -1,0 +1,181 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import { doc, DOCS_PR } from '../config';
+
+const conditions = [
+  ['Device', 'iPad Air 11-inch (M3), iPadOS 27.0, Developer Mode on'],
+  ['App', 'DeviceProbe, MacBridge’s research app: a development build installed with Apple’s standard developer tools'],
+  ['Signing', 'Every library signed by the owner’s own Apple development team. The development signature includes get-task-allow, which distribution builds do not have.'],
+  ['Code', 'Original NORD LABS C and Objective-C test code. The same source built for iPadOS and for macOS, ARM64 both. No Apple or Blender code.'],
+  ['Repetition', 'Each group of measurements run twice, with identical results.'],
+];
+
+const steps = [
+  ['Code signature registered with the system; library validation', 'Accepted', 'Accepted'],
+  ['Mapped, pointers rebased, imports bound', '0 bytes differ', '0 bytes differ'],
+  ['Start-up code (initializer) ran', 'Yes', 'Yes'],
+  ['Exported functions called · expected 42, 30, 6, 8, 1', '42 · 30 · 6 · 8 · 1', '42 · 30 · 6 · 8 · 1'],
+];
+
+const values = [
+  ['42', 'only if the start-up code ran, through a bound import'],
+  ['30', 'only if a pointer was rebased'],
+  ['6', 'only if an import was bound'],
+  ['8', 'only if a lazily bound import works'],
+  ['1', 'only if zero-filled memory and the previous call were right'],
+];
+
+const notShown = [
+  ['A standalone macOS program', 'The test code was a library called by the app. A program needs an entry point, a process environment, arguments and an exit.'],
+  ['Arbitrary macOS application execution', 'Only tiny, purpose-built NORD LABS fixtures have run. No other developer’s code.'],
+  ['An AppKit application', 'No windows, no AppKit. Objective-C ran only for two small classes of MacBridge’s own.'],
+  ['Blender, at any stage', 'Blender is thousands of times larger, signed by its own developer, and needs Python, files, threads and much more.'],
+  ['Code signed by another developer', 'Every library shared the app’s developer team. Whether another team’s signature is accepted is untested.'],
+  ['App Store or TestFlight builds', 'Only a development build was tested. Distribution signing may behave differently.'],
+  ['Any way around a platform protection', 'None was attempted. The code passed the system’s own signature and library-validation checks.'],
+];
+---
+
+<Base title="First Contact" description="On 2026-10-10, MacBridge's experimental loader ran its own ARM64 macOS-built C and Objective-C test libraries on a physical iPad Air (M3). What was measured, under which conditions, and what it does not show.">
+  <PageHero
+    eyebrow="Research milestone · 2026-10-10"
+    title="First Contact"
+    lede="For the first time, code built as a Mac library executed on a physical iPad through MacBridge. It was tiny, it was MacBridge’s own, and it ran under development signing. Those conditions matter as much as the result."
+  >
+    <div class="mt-10 rounded-xl border border-amber/30 bg-amber/[0.05] p-5 text-[0.95rem] leading-relaxed text-ti md:max-w-3xl">
+      <strong class="text-paper font-semibold">A narrow result.</strong> No macOS application, no standalone macOS
+      program, no AppKit application and no Blender code has run on an iPad. What ran were small original
+      test libraries written by NORD LABS.
+    </div>
+  </PageHero>
+
+  <!-- plain language -->
+  <section class="border-b hairline">
+    <div class="wrap grid gap-10 py-20 md:grid-cols-[1fr_1.5fr] md:py-24">
+      <div class="reveal">
+        <p class="eyebrow">In plain language</p>
+        <h2 class="h2 mt-4">Refused by one loader. Run by another.</h2>
+      </div>
+      <div class="reveal space-y-5 text-[1.05rem] leading-relaxed text-ti">
+        <p>
+          A Mac library is ARM64 code plus a description of what it needs. The iPad’s own loader reads that
+          description, sees “made for macOS”, and refuses the file before any of it runs. That refusal was
+          measured again on the iPad for this experiment.
+        </p>
+        <p>
+          MacBridge’s experimental loader does the preparation work macOS’s loader normally does. Given a small
+          test library built for macOS, it asked the iPad to register and check the library’s code signature,
+          placed the code in memory, connected every pointer and import, ran the start-up code, and called its
+          functions. They returned exactly the values they were designed to return.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- conditions -->
+  <section class="border-b hairline">
+    <div class="wrap py-20 md:py-24">
+      <p class="eyebrow reveal">The conditions</p>
+      <dl class="reveal mt-8 divide-y divide-white/[0.07] border-y hairline">
+        {conditions.map(([k, v]) => (
+          <div class="grid gap-2 py-5 md:grid-cols-[12rem_1fr] md:gap-8">
+            <dt class="font-mono text-[0.72rem] tracking-[0.12em] uppercase text-ti-2 md:pt-0.5">{k}</dt>
+            <dd class="leading-relaxed text-paper/90">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <!-- measured -->
+  <section class="border-b hairline">
+    <div class="wrap py-20 md:py-24">
+      <div class="reveal max-w-2xl">
+        <p class="eyebrow">What was measured</p>
+        <h2 class="h2 mt-4">The same source, built twice.</h2>
+      </div>
+      <div class="reveal table-wrap mt-10">
+        <table class="data">
+          <thead><tr><th>Step</th><th>iPadOS-built</th><th>macOS-built</th></tr></thead>
+          <tbody>
+            <tr><td>Apple’s loader</td><td class="num">loaded</td><td class="num" style="color:var(--color-amber)">refused: incompatible platform</td></tr>
+            {steps.map(([s, a, b]) => (
+              <tr><td>{s}</td><td class="num">{a}</td><td class="num">{b}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="reveal mt-16 grid gap-8">
+        <div class="max-w-2xl">
+          <h3 class="font-display text-xl font-semibold">Why these numbers</h3>
+          <p class="mt-3 leading-relaxed text-ti">Each value depends on specific loader steps, and all of them need the code mapped executable. If any step had been wrong, a specific number would have come out wrong.</p>
+        </div>
+        <ul class="grid gap-px overflow-hidden rounded-2xl border hairline bg-white/[0.07] grid-cols-2 md:grid-cols-5">
+          {values.map(([v, why]) => (
+            <li class="bg-ink p-5">
+              <span class="font-mono text-3xl text-ice">{v}</span>
+              <p class="mt-3 text-[0.8rem] leading-snug text-ti-2">{why}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="reveal mt-16 grid gap-4 md:grid-cols-2">
+        <div class="card p-7">
+          <p class="eyebrow">ARM64 thread-local variables</p>
+          <p class="mt-4 leading-relaxed text-ti">A third library uses per-thread variables, set up through MacBridge’s own ARM64 entry code: <span class="text-paper">3 descriptors, 0 unexpected differences, self-check passed</span>. Its first run on Apple hardware; previously checked only under an emulator.</p>
+        </div>
+        <div class="card p-7">
+          <p class="eyebrow">Objective-C · same day</p>
+          <p class="mt-4 leading-relaxed text-ti">An own Objective-C library built for macOS: two classes registered through Apple’s documented runtime functions, then sent real messages. <span class="text-paper">Self-check 1, twice</span>; a deliberately broken variant failed as expected.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- not shown -->
+  <section class="border-b hairline">
+    <div class="wrap py-20 md:py-24">
+      <div class="reveal max-w-2xl">
+        <p class="eyebrow">The limits are part of the result</p>
+        <h2 class="h2 mt-4">What this does not show</h2>
+      </div>
+      <ul class="reveal mt-10 divide-y divide-white/[0.07] border-y hairline">
+        {notShown.map(([t, d]) => (
+          <li class="grid gap-2 py-5 md:grid-cols-[18rem_1fr] md:gap-8">
+            <p class="flex items-start gap-3 text-paper"><span class="mt-[0.55rem] h-px w-3 shrink-0 bg-ti-2" aria-hidden="true"></span>{t}</p>
+            <p class="leading-relaxed text-ti">{d}</p>
+          </li>
+        ))}
+      </ul>
+      <p class="reveal mt-10 max-w-3xl leading-relaxed text-ti">
+        Before this run, the deciding question was whether MacBridge’s loader could work on an iPad at all,
+        inside the platform’s rules. For MacBridge’s own, same-team-signed code under development signing, the
+        answer is now yes, measured, in this configuration. How other configurations behave is unknown.
+      </p>
+    </div>
+  </section>
+
+  <!-- evidence -->
+  <section>
+    <div class="wrap py-20 md:py-24">
+      <div class="reveal card flex flex-col gap-8 p-8 md:flex-row md:items-center md:justify-between md:p-10">
+        <div class="max-w-xl">
+          <p class="eyebrow">Public evidence</p>
+          <p class="mt-4 font-display text-2xl font-semibold tracking-[-0.015em]">Read the full First Contact report</p>
+          <p class="mt-3 text-sm leading-relaxed text-ti-2">
+            Published in the MacBridge-Project documentation, currently in an{' '}
+            <a href={DOCS_PR} class="text-ti underline decoration-white/20 underline-offset-2 hover:text-paper">open documentation pull request</a>.
+            Raw logs stay in the private implementation repository.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a href={doc('docs/research/first-contact.md')} class="btn btn-primary">First Contact report <span aria-hidden="true">↗</span></a>
+          <a href={doc('docs/evidence.md')} class="btn btn-ghost">How results are established <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

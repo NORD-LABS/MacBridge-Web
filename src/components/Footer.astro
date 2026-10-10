@@ -1,0 +1,54 @@
+---
+import Logo from './Logo.astro';
+import { NAV, REPO, SITE, doc } from '../config';
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-32 border-t hairline">
+  <div class="wrap grid gap-12 py-16 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+    <div>
+      <a href="/" class="flex items-center gap-2.5 text-paper" aria-label="MacBridge home">
+        <Logo class="h-6 w-6" />
+        <span class="font-display font-semibold tracking-[0.18em] text-[0.95rem]">MACBRIDGE</span>
+      </a>
+      <p class="mt-4 max-w-xs text-sm leading-relaxed text-ti-2">
+        Independent systems research by <a href={SITE.parent} class="text-ti hover:text-paper">NORD LABS</a>, Québec.
+        An experiment, not a product.
+      </p>
+    </div>
+    <div>
+      <p class="eyebrow">Site</p>
+      <ul class="mt-4 space-y-2.5 text-sm">
+        <li><a href="/" class="text-ti hover:text-paper">Overview</a></li>
+        {NAV.map((n) => <li><a href={n.href} class="text-ti hover:text-paper">{n.label}</a></li>)}
+      </ul>
+    </div>
+    <div>
+      <p class="eyebrow">Evidence</p>
+      <ul class="mt-4 space-y-2.5 text-sm">
+        <li><a href={doc('STATUS.md')} class="text-ti hover:text-paper">Status</a></li>
+        <li><a href={doc('docs/evidence.md')} class="text-ti hover:text-paper">How results are established</a></li>
+        <li><a href={doc('docs/journal.md')} class="text-ti hover:text-paper">Research journal</a></li>
+        <li><a href={doc('SECURITY.md')} class="text-ti hover:text-paper">Security</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="eyebrow">Project</p>
+      <ul class="mt-4 space-y-2.5 text-sm">
+        <li><a href={REPO} class="text-ti hover:text-paper">GitHub repository</a></li>
+        <li><a href={doc('CONTRIBUTING.md')} class="text-ti hover:text-paper">Contributing</a></li>
+        <li><a href={`${REPO}/blob/main/LICENSE.md`} class="text-ti hover:text-paper">License</a></li>
+        <li><a href={SITE.parent} class="text-ti hover:text-paper">iso-nord.tech</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t hairline">
+    <div class="wrap flex flex-col gap-3 py-7 text-xs leading-relaxed text-ti-3 md:flex-row md:items-start md:justify-between">
+      <p>© {year} Théodore Beaupré, operating as ISO NORD CA. All rights reserved.</p>
+      <p class="max-w-xl md:text-right">
+        MacBridge is not affiliated with, endorsed by, or supported by Apple Inc. or the Blender Foundation.
+        macOS, iPadOS, iPad, Apple Silicon and Metal are trademarks of Apple Inc. Blender is a trademark of the Blender Foundation.
+      </p>
+    </div>
+  </div>
+</footer>

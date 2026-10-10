@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://macbridge.iso-nord.tech/sitemap-index.xml

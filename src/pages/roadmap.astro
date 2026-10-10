@@ -1,0 +1,136 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Status, { type StatusKind } from '../components/Status.astro';
+import { doc } from '../config';
+
+// Mirrors ROADMAP.md "At a glance". No dates, no percentages.
+const phases: { n: string; t: string; k: StatusKind; d: string; gate?: boolean }[] = [
+  { n: '0', t: 'Research foundations', k: 'COMPLETE', d: 'Native ARM64 first; no full virtual machine as the primary design; a userspace runtime inside one app; Apple files never redistributed; no code imported from GPL projects.' },
+  { n: '1', t: 'Inspection', k: 'COMPLETE', d: 'Mach-O, signatures, entitlements, nested executables, bundles and dependency graphs read correctly. Inspector installed and used on a physical iPad Air (M3).' },
+  { n: '2', t: 'Static compatibility mapping', k: 'ACTIVE', d: 'Nearly complete for Blender 5.2.2 headless: 1,453 imports routed, 26 library links mapped, fixups decoded identically to LLVM. Open: the NSColor decision.' },
+  { n: '3', t: 'Original compatibility components', k: 'EXPERIMENTAL', d: 'A load surface for the 47 definitions Blender needs to load, validated on an Intel Mac and in the x86_64 simulator. Not yet on an iPad.' },
+  { n: '4', t: 'Host execution research', k: 'EXPERIMENTAL', d: 'The research loader runs MacBridge’s own libraries on an Intel Mac; the same loader steps have also been measured on the iPad.' },
+  { n: '5', t: 'Physical-iPad feasibility', k: 'ACTIVE', gate: true, d: 'The gate. First positive result: own same-team-signed libraries run under development signing. Other developers’ code and distribution builds are still open.' },
+  { n: '6', t: 'First ARM64 macOS fixture on an iPad', k: 'ACTIVE', d: 'A macOS-built test library has run (First Contact). A standalone macOS program has not.' },
+  { n: '7', t: 'Headless runtime', k: 'NOT STARTED', d: 'Process state, files, threads: the services a loaded program asks the system for.' },
+  { n: '8', t: 'Blender headless', k: 'NOT STARTED', d: 'Blender’s own code begins executing; --version prints; --background runs a Python script.' },
+  { n: '9', t: 'Windowing and input', k: 'NOT STARTED', d: 'Static mapping only.' },
+  { n: '10', t: 'Metal', k: 'NOT STARTED', d: 'GPU drawing and rendering through the iPad’s GPU.' },
+  { n: '11', t: 'Usability and reliability', k: 'NOT STARTED', d: 'Something a person could actually use.' },
+];
+
+const open: { q: string; k: StatusKind }[] = [
+  { q: 'Running a Mac program as a separate process on iPad', k: 'BLOCKED' },
+  { q: 'Code signed by another developer, such as Blender’s', k: 'NOT TESTED' },
+  { q: 'App Store / TestFlight distribution builds', k: 'NOT TESTED' },
+  { q: 'Executing from an anonymous page made executable', k: 'UNKNOWN' },
+  { q: 'The iPad’s memory limit for a Blender-sized workload', k: 'UNKNOWN' },
+  { q: 'The research loader on an Apple Silicon Mac', k: 'NOT TESTED' },
+];
+
+const legend: { k: StatusKind; d: string }[] = [
+  { k: 'COMPLETE', d: 'The phase’s defining result is recorded. A research milestone, not a product feature.' },
+  { k: 'EXPERIMENTAL', d: 'Research code passes its checks, but not yet where it matters (usually a physical iPad).' },
+  { k: 'ACTIVE', d: 'Current work.' },
+  { k: 'BLOCKED', d: 'Cannot proceed. The obstacle is named.' },
+  { k: 'UNKNOWN', d: 'Depends on a question no measurement answers yet.' },
+  { k: 'NOT TESTED', d: 'Nobody has run the check in that environment. Not a failure, not a pass.' },
+];
+---
+
+<Base title="Roadmap" description="The MacBridge research roadmap: twelve phases from inspection to Blender on an iPad, with the status of each. No dates and no completion percentages.">
+  <PageHero
+    eyebrow="Roadmap"
+    title="A research plan, not a release schedule."
+    lede="No dates and no percentages. A phase ends when its defining result has been recorded, positive or negative. A precise “blocked by X” is a valid way for a phase to end."
+  />
+
+  <section class="border-b hairline">
+    <div class="wrap py-16 md:py-20">
+      <p class="eyebrow">Status vocabulary</p>
+      <dl class="mt-8 grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+        {legend.map((l) => (
+          <div>
+            <dt><Status kind={l.k} /></dt>
+            <dd class="mt-3 text-sm leading-relaxed text-ti">{l.d}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <section class="border-b hairline">
+    <div class="wrap py-20 md:py-24">
+      <div class="reveal max-w-2xl">
+        <p class="eyebrow">Phases</p>
+        <h2 class="h2 mt-4">From inspection to Blender.</h2>
+        <p class="lede mt-5">Phase 5 is a gate: its answer decides whether everything after it is possible on a stock iPad at all. Reaching one phase does not imply the next.</p>
+      </div>
+
+      <ol class="timeline reveal mt-14">
+        {phases.map((p) => (
+          <li class="tl-item" data-k={p.k} data-gate={p.gate ? 'true' : undefined}>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span class="font-mono text-xs text-ti-2">PHASE {p.n.padStart(2, '0')}</span>
+                <Status kind={p.k} />
+                {p.gate && <span class="font-mono text-[0.64rem] tracking-[0.1em] text-amber">GATE</span>}
+              </div>
+              <h3 class={`mt-3 font-display text-xl font-semibold tracking-[-0.01em] ${p.k === 'NOT STARTED' ? 'text-ti' : 'text-paper'}`}>{p.t}</h3>
+              <p class="mt-2 max-w-2xl text-[0.95rem] leading-relaxed text-ti-2">{p.d}</p>
+              {p.n === '6' && <a href="/first-contact" class="arrow-link mt-3 text-sm">First Contact · 2026-10-10 <span aria-hidden="true">→</span></a>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap py-20 md:py-24">
+      <div class="reveal grid gap-12 lg:grid-cols-[1fr_1.4fr]">
+        <div>
+          <p class="eyebrow">Research risks</p>
+          <h2 class="h2 mt-4">What could stop it.</h2>
+          <p class="lede mt-5">Each of these can end the project with a documented negative result. That outcome is acceptable; an unrecorded one is not.</p>
+          <a href={doc('ROADMAP.md')} class="arrow-link mt-8 text-[0.95rem]">Definitions of done, dependencies and risks <span aria-hidden="true">↗</span></a>
+        </div>
+        <ul class="divide-y divide-white/[0.07] border-y hairline">
+          {open.map((o) => (
+            <li class="flex items-center justify-between gap-6 py-4">
+              <span class="text-paper/90">{o.q}</span>
+              <Status kind={o.k} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .timeline { position: relative; }
+  .tl-item { position: relative; display: grid; grid-template-columns: 2rem 1fr; gap: 1rem; padding-bottom: 2.5rem; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before {
+    content: ''; position: absolute; left: calc(1rem - 0.5px); top: 1.4rem; bottom: -0.2rem; width: 1px;
+    background: var(--line-2);
+  }
+  .tl-item:last-child::before { display: none; }
+  .tl-item[data-k='NOT STARTED']::before { background: repeating-linear-gradient(180deg, var(--color-ti-3) 0 2px, transparent 2px 7px); }
+  .tl-node {
+    position: relative; z-index: 1; margin: 0.35rem auto 0; width: 11px; height: 11px; border-radius: 999px;
+    border: 1px solid var(--color-ti-2); background: var(--color-ink);
+  }
+  .tl-item[data-k='COMPLETE'] .tl-node { background: var(--color-ice); border-color: var(--color-ice); }
+  .tl-item[data-k='ACTIVE'] .tl-node { background: var(--color-paper); border-color: var(--color-paper); box-shadow: 0 0 0 4px rgb(236 237 239 / 0.08); }
+  .tl-item[data-k='EXPERIMENTAL'] .tl-node { border-style: dashed; border-color: var(--color-ti); }
+  .tl-item[data-k='NOT STARTED'] .tl-node { border-color: var(--color-ti-3); }
+  .tl-item[data-gate='true'] .tl-node { width: 13px; height: 13px; transform: rotate(45deg); border-radius: 2px; background: var(--color-ink); border: 1.5px solid var(--color-amber); box-shadow: none; }
+  @media (min-width: 768px) {
+    .tl-item { grid-template-columns: 3rem 1fr; }
+    .tl-item::before { left: calc(1.5rem - 0.5px); }
+  }
+</style>

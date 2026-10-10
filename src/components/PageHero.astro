@@ -1,0 +1,13 @@
+---
+interface Props { eyebrow: string; title: string; lede?: string }
+const { eyebrow, title, lede } = Astro.props;
+---
+<section class="relative border-b hairline overflow-hidden">
+  <div class="grid-bg pointer-events-none absolute inset-0 opacity-70" aria-hidden="true"></div>
+  <div class="wrap relative pt-20 pb-16 md:pt-28 md:pb-20">
+    <p class="eyebrow">{eyebrow}</p>
+    <h1 class="display mt-5 max-w-4xl text-[clamp(2.6rem,6.5vw,5rem)]">{title}</h1>
+    {lede && <p class="lede mt-6 max-w-2xl">{lede}</p>}
+    <slot />
+  </div>
+</section>

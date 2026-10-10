@@ -1,0 +1,136 @@
+---
+// Mac → iPad bridge. Each lane is one layer a Mac program needs; its line style
+// encodes where that layer has actually been shown to work. Sourced from STATUS.md.
+type State = 'device' | 'host' | 'planned';
+const lanes: { label: string; note: string; state: State }[] = [
+  { label: 'Mach-O inspection', note: 'iPad app', state: 'device' },
+  { label: 'Loader · map, rebase, bind', note: 'iPad · own library', state: 'device' },
+  { label: 'ARM64 thread-locals', note: 'iPad · own library', state: 'device' },
+  { label: 'Objective-C classes', note: 'iPad · own library', state: 'device' },
+  { label: 'AppKit load surface', note: 'Mac + simulator', state: 'host' },
+  { label: 'Standalone program', note: 'not demonstrated', state: 'planned' },
+  { label: 'Windows · input', note: 'not started', state: 'planned' },
+  { label: 'Metal graphics', note: 'not started', state: 'planned' },
+];
+---
+
+<figure class="bridge" aria-labelledby="bridge-caption">
+  <div class="bridge-grid">
+    <!-- Mac -->
+    <div class="device">
+      <svg viewBox="0 0 220 150" class="w-full max-w-[220px]" aria-hidden="true">
+        <rect x="24" y="10" width="172" height="112" rx="9" fill="#0e1013" stroke="rgb(255 255 255 / .22)" />
+        <rect x="32" y="18" width="156" height="96" rx="3" fill="#08090b" stroke="rgb(255 255 255 / .07)" />
+        <path d="M6 128h208l-8 10H14z" fill="#15181d" stroke="rgb(255 255 255 / .22)" />
+        <path d="M92 128h36" stroke="rgb(255 255 255 / .25)" />
+        <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="8" fill="#757b85">
+          <text x="42" y="36">$ file app</text>
+          <text x="42" y="50" fill="#a3a8b0">Mach-O 64-bit</text>
+          <text x="42" y="62" fill="#a3a8b0">arm64 · MH_DYLIB</text>
+          <text x="42" y="74">platform  macOS</text>
+          <text x="42" y="98" fill="#4a4f57">▍</text>
+        </g>
+      </svg>
+      <p class="device-label">Mac<span>macOS · ARM64</span></p>
+    </div>
+
+    <!-- Lanes -->
+    <ol class="lanes">
+      {lanes.map((l) => (
+        <li class="lane" data-state={l.state}>
+          <span class="lane-line" aria-hidden="true">
+            {l.state === 'device' && <svg class="absolute inset-0 h-full w-full overflow-visible" preserveAspectRatio="none"><line x1="0" y1="50%" x2="100%" y2="50%" class="flow" stroke="#e8f4fd" stroke-width="1.5" stroke-linecap="round" /></svg>}
+          </span>
+          <span class="lane-label">{l.label}</span>
+          <span class="lane-note">{l.note}</span>
+        </li>
+      ))}
+    </ol>
+
+    <!-- iPad -->
+    <div class="device">
+      <svg viewBox="0 0 220 150" class="w-full max-w-[220px]" aria-hidden="true">
+        <rect x="44" y="4" width="132" height="142" rx="12" fill="#0e1013" stroke="rgb(255 255 255 / .22)" />
+        <rect x="52" y="12" width="116" height="126" rx="5" fill="#08090b" stroke="rgb(255 255 255 / .07)" />
+        <circle cx="110" cy="8" r="1.4" fill="rgb(255 255 255 / .3)" />
+        <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="8" fill="#757b85">
+          <text x="60" y="32">MacBridge</text>
+          <text x="60" y="48" fill="#a3a8b0">loader → 42</text>
+          <text x="60" y="60" fill="#a3a8b0">        30 6 8 1</text>
+          <text x="60" y="76">dyld: refused</text>
+          <text x="60" y="88" fill="#4a4f57">(have macOS)</text>
+        </g>
+        <rect x="60" y="104" width="100" height="22" rx="4" fill="none" stroke="#a9d4f2" stroke-opacity=".5" />
+        <text x="110" y="118" text-anchor="middle" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="7.5" fill="#a9d4f2">own fixture · ran</text>
+      </svg>
+      <p class="device-label">iPad<span>iPadOS · Apple Silicon</span></p>
+    </div>
+  </div>
+
+  <figcaption id="bridge-caption" class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-[0.78rem] text-ti-2">
+    <span class="flex items-center gap-2"><i class="key key-device"></i>Shown on a physical iPad, with MacBridge's own test code</span>
+    <span class="flex items-center gap-2"><i class="key key-host"></i>Shown on a Mac or in the simulator only</span>
+    <span class="flex items-center gap-2"><i class="key key-planned"></i>Not demonstrated</span>
+  </figcaption>
+</figure>
+
+<style>
+  .bridge-grid {
+    display: grid;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  @media (min-width: 900px) {
+    .bridge-grid { grid-template-columns: 190px 1fr 190px; gap: 0; }
+  }
+  .device { display: flex; flex-direction: column; align-items: center; }
+  .device-label {
+    margin-top: 0.75rem; text-align: center; color: var(--color-paper);
+    font-weight: 600; font-size: 0.95rem;
+  }
+  .device-label span {
+    display: block; margin-top: 0.2rem; font-family: var(--font-mono); font-weight: 400;
+    font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-ti-2);
+  }
+  .lanes { display: flex; flex-direction: column; gap: 0.3rem; }
+  .lane {
+    position: relative; display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; min-height: 2.35rem; padding-inline: 0.25rem;
+  }
+  .lane-line { position: absolute; left: 0; right: 0; top: 50%; height: 2px; transform: translateY(-50%); }
+  .lane-label, .lane-note { position: relative; background: var(--color-ink); padding-inline: 0.6rem; }
+  .lane-label { font-size: 0.88rem; color: var(--color-paper); }
+  .lane-note { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+
+  .lane[data-state='device'] .lane-line { background: rgb(169 212 242 / 0.55); height: 1.5px; }
+  .lane[data-state='device'] .lane-note { color: var(--color-ice); }
+  .lane[data-state='host'] .lane-line {
+    background: linear-gradient(90deg, var(--color-ti-2) 0 45%, transparent 45%),
+      repeating-linear-gradient(90deg, var(--color-ti-3) 0 6px, transparent 6px 11px);
+    height: 1px;
+  }
+  .lane[data-state='host'] .lane-note { color: var(--color-ti); }
+  .lane[data-state='planned'] .lane-line {
+    background: repeating-linear-gradient(90deg, var(--color-ti-3) 0 1.5px, transparent 1.5px 7px);
+    height: 1px;
+  }
+  .lane[data-state='planned'] .lane-label { color: var(--color-ti-2); }
+  .lane[data-state='planned'] .lane-note { color: var(--color-ti-3); }
+
+  @media (max-width: 899px) {
+    .lane { justify-content: flex-start; gap: 0.75rem; padding: 0.35rem 0; }
+    .lane-line { position: relative; flex: 0 0 1.5rem; transform: none; top: auto; }
+    .lane-label, .lane-note { background: none; padding: 0; }
+    .lane-label { flex: 1; font-size: 0.85rem; }
+    .lane-note { font-size: 0.6rem; text-align: right; }
+  }
+  @media (min-width: 900px) {
+    .lane-line { left: -1.5rem; right: -1.5rem; }
+    .lanes { padding-inline: 1.5rem; }
+  }
+
+  .key { display: inline-block; width: 22px; height: 2px; }
+  .key-device { background: var(--color-ice); }
+  .key-host { height: 1px; background: repeating-linear-gradient(90deg, var(--color-ti) 0 5px, transparent 5px 8px); }
+  .key-planned { height: 1px; background: repeating-linear-gradient(90deg, var(--color-ti-2) 0 1.5px, transparent 1.5px 5px); }
+</style>

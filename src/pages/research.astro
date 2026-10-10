@@ -1,0 +1,204 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Status from '../components/Status.astro';
+import { doc } from '../config';
+
+const toc = [
+  ['inspection', 'Mach-O inspection'],
+  ['loader', 'Experimental userspace loader'],
+  ['fixups', 'Binary fixups'],
+  ['objc', 'Objective-C'],
+  ['tls', 'ARM64 thread-local variables'],
+  ['linker', 'Host-side linker research'],
+  ['ipad', 'Physical iPad experiments'],
+  ['open', 'Demonstrated vs. untested'],
+];
+---
+
+<Base title="Research" description="How MacBridge studies running macOS software on an iPad: Mach-O inspection, an experimental userspace loader, fixups, Objective-C, ARM64 thread-locals, linker research and physical-iPad experiments. With the evidence and limits of each.">
+  <PageHero
+    eyebrow="Research"
+    title="Every layer, measured on its own."
+    lede="A Mac program asks a great deal of the system before its first instruction runs. MacBridge takes those requests apart and checks each one separately, with original test code, in named environments."
+  />
+
+  <div class="wrap grid gap-14 py-16 lg:grid-cols-[14rem_1fr] lg:gap-20 lg:py-24">
+    <aside class="lg:sticky lg:top-24 lg:self-start">
+      <nav aria-label="On this page">
+        <p class="eyebrow">On this page</p>
+        <ol class="mt-4 space-y-2.5 border-l hairline text-sm">
+          {toc.map(([id, label]) => (
+            <li><a href={`#${id}`} class="-ml-px block border-l border-transparent pl-4 text-ti hover:border-ice hover:text-paper">{label}</a></li>
+          ))}
+        </ol>
+      </nav>
+    </aside>
+
+    <article class="prose max-w-3xl">
+      <section id="inspection">
+        <div class="not-prose flex flex-wrap items-center gap-3"><span class="eyebrow">01</span><Status kind="PASS" /><span class="font-mono text-[0.7rem] text-ti-2">Mac · physical iPad</span></div>
+        <h2 style="margin-top:.6em">Mach-O inspection</h2>
+        <p>
+          A macOS app is a bundle of Mach-O files: the executable format of Apple's platforms. Before anything
+          can be loaded, it has to be understood. MacBridge's inspector reads macOS apps <strong>without running
+          them</strong>: thin and universal binaries, load commands, code signatures and DER entitlements, nested
+          helpers, bundle structure and the full graph of bundled and system libraries.
+        </p>
+        <p>
+          The inspector runs on the Mac command line and inside the MacBridge iPad app, which the owner installed
+          and used on a physical iPad Air (M3) with iPadOS 27.0. Coverage-guided fuzzing found two crashes and one
+          severe slowdown on crafted files; all three were fixed with regression tests.
+        </p>
+      </section>
+
+      <section id="loader">
+        <div class="not-prose mt-16 flex flex-wrap items-center gap-3"><span class="eyebrow">02</span><Status kind="EXPERIMENTAL" /><span class="font-mono text-[0.7rem] text-ti-2">Intel Mac · physical iPad, own fixtures</span></div>
+        <h2 style="margin-top:.6em">Experimental userspace loader</h2>
+        <p>
+          On a Mac, Apple's dynamic loader prepares a program before <code>main</code>: it maps segments, finds
+          libraries, fixes up pointers, protects memory, registers Objective-C classes and thread-locals, and runs
+          initializers. A Mac program on an iPad would have no macOS loader, so MacBridge is writing its own,
+          inside one ordinary app process.
+        </p>
+        <p>
+          It is tested only with <strong>small original libraries written for MacBridge</strong>, each built so that one
+          result depends on exactly one loader step. If an initializer did not run, a counter reads zero; if a
+          pointer was not rebased, a specific number comes out wrong.
+        </p>
+        <ul>
+          <li><strong>Intel Mac, x86_64:</strong> maps, rebases, binds, coalesces weak symbols across several libraries, sets up thread-locals, registers Objective-C classes, runs initializers and calls functions. Memory after fixups matches the model byte for byte.</li>
+          <li><strong>Physical iPad, ARM64:</strong> the same for single own libraries, including one built for macOS, under development signing. See <a href="/first-contact">First Contact</a>.</li>
+          <li><strong>Not yet:</strong> several dependent libraries on the iPad, a standalone program, an Apple Silicon Mac, or any code that is not MacBridge's own.</li>
+        </ul>
+      </section>
+
+      <section id="fixups">
+        <div class="not-prose mt-16 flex flex-wrap items-center gap-3"><span class="eyebrow">03</span><Status kind="PASS" /><span class="font-mono text-[0.7rem] text-ti-2">Static analysis · Mac · simulator</span></div>
+        <h2 style="margin-top:.6em">Binary fixups</h2>
+        <p>
+          A program is linked as if it would load at a fixed address with every library at a known place. Neither
+          is true, so the loader <em>rebases</em> pointers and <em>binds</em> imported symbols. A single wrong fixup rarely fails
+          loudly: it leaves a pointer that is almost right, and the program crashes later somewhere unrelated.
+        </p>
+        <p>MacBridge checks fixups two independent ways:</p>
+        <ul>
+          <li><strong>Against LLVM.</strong> Its decoder produces exactly the same list as <code>llvm-objdump</code> on all 195 of Blender 5.2.2's images that carry fixups: <strong>1,201,316 fixups</strong>. Every image uses bind opcodes, not chained fixups.</li>
+          <li><strong>Against Apple's loader.</strong> An execution-free model of post-load memory reproduces every value Apple's loader wrote for MacBridge's own probe, on the Mac and in the simulator.</li>
+        </ul>
+      </section>
+
+      <section id="objc">
+        <div class="not-prose mt-16 flex flex-wrap items-center gap-3"><span class="eyebrow">04</span><Status kind="EXPERIMENTAL" /><span class="font-mono text-[0.7rem] text-ti-2">Intel Mac · simulator · physical iPad</span></div>
+        <h2 style="margin-top:.6em">Objective-C</h2>
+        <p>
+          Objective-C classes are registered by name while a program loads, each linked to its superclass. A class
+          that subclasses <code>NSWindow</code> cannot be registered unless <code>NSWindow</code> already exists, and AppKit does
+          not exist on an iPad. So a Mac program can fail <em>while loading</em>, long before it opens a window.
+        </p>
+        <ul>
+          <li><strong>Blender, statically:</strong> 4 images define 6 classes, subclassing <code>NSWindow</code>, <code>NSView</code> and <code>NSOpenGLView</code>.</li>
+          <li><strong>Load surface:</strong> name-only placeholder classes fail before <code>main</code>. Real minimal classes with correct superclass chains work. The 47 definitions Blender needs to load (39 from AppKit) were each removed in turn, and loading stopped every time (44 of 44 cases, Intel Mac and x86_64 simulator). Structure, not behaviour: nothing is drawn.</li>
+          <li><strong>Physical iPad, 2026-10-10:</strong> MacBridge's loader registered two classes from an own macOS-built test library through Apple's documented runtime functions and sent them real messages. Self-check 1, twice. A deliberately broken variant failed as expected; an existing class name is refused, never replaced.</li>
+          <li><strong>Open:</strong> <code>NSColor</code> exists in both AppKit and UIKit. How to resolve that conflict is an owner decision, still pending.</li>
+        </ul>
+      </section>
+
+      <section id="tls">
+        <div class="not-prose mt-16 flex flex-wrap items-center gap-3"><span class="eyebrow">05</span><Status kind="PASS" /><span class="font-mono text-[0.7rem] text-ti-2">QEMU · physical iPad, own library</span></div>
+        <h2 style="margin-top:.6em">ARM64 thread-local variables</h2>
+        <p>
+          Thread-local variables have one copy per thread. On Apple platforms their setup goes through a small
+          piece of entry code with strict rules about which processor registers it may change. MacBridge wrote its
+          own ARM64 entry code for this.
+        </p>
+        <ul>
+          <li><strong>Cloud Linux, under QEMU:</strong> it kept every register it must keep, on four threads at once; three deliberately broken variants were each caught. Emulated: not Darwin, not Apple hardware.</li>
+          <li><strong>Physical iPad:</strong> its first run on Apple hardware. 3 descriptors set up, 0 unexpected differences from the model, self-check passed, twice. One own library, two threads.</li>
+        </ul>
+      </section>
+
+      <section id="linker">
+        <div class="not-prose mt-16 flex flex-wrap items-center gap-3"><span class="eyebrow">06</span><Status kind="ACTIVE" /><span class="font-mono text-[0.7rem] text-ti-2">Static analysis · Mac · simulator</span></div>
+        <h2 style="margin-top:.6em">Host-side linker research</h2>
+        <p>
+          Before running anything, MacBridge works out who would answer each request a program makes of the system.
+          For a headless start of the official Blender 5.2.2 ARM64 build:
+        </p>
+        <div class="not-prose table-wrap my-8">
+          <table class="data">
+            <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+            <tbody>
+              <tr><td>System library links</td><td><span class="num">26</span>, all strong. 14 need a redirect to an iPadOS library; Cocoa, OpenGL and AudioUnit need stand-ins; AppKit is a provider conflict.</td></tr>
+              <tr><td>Imported system symbols</td><td><span class="num">1,453</span>: 1,368 exist on iPadOS by name, 46 would come from MacBridge, 38 are unresolved lazy functions, 1 conflict (<code class="k">NSColor</code>).</td></tr>
+              <tr><td>Startup closure</td><td><span class="num">30</span> native images, about 592 MiB of virtual memory, 6,211 static initializers.</td></tr>
+              <tr><td>Preflight capabilities</td><td><span class="num">23</span>: PASS 5, PARTIAL 8, UNKNOWN 5, NOT TESTED 3, BLOCKED 2. No overall verdict.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          A dedicated experiment corrected an assumption along the way: on the tested systems, Apple's loader binds
+          lazily imported functions <strong>at launch</strong>, and writes 0 for a missing one, so a later call crashes.
+          Existing by name is not behaving the same; every one of these counts is static.
+        </p>
+      </section>
+
+      <section id="ipad">
+        <div class="not-prose mt-16 flex flex-wrap items-center gap-3"><span class="eyebrow">07</span><Status kind="ACTIVE" /><span class="font-mono text-[0.7rem] text-ti-2">Physical iPad Air (M3) · iPadOS 27.0</span></div>
+        <h2 style="margin-top:.6em">Physical iPad experiments</h2>
+        <p>
+          Code signing, memory limits and the sandbox are enforced only on the device. The simulator runs on the
+          Mac's kernel and skips them. So MacBridge built <strong>DeviceProbe</strong>, a small research app installed
+          through Apple's standard developer tools, carrying MacBridge's own test libraries. Developer Mode is on;
+          nothing else on the device is changed.
+        </p>
+        <div class="not-prose table-wrap my-8">
+          <table class="data">
+            <thead><tr><th>Question</th><th>Measured answer, 2026-10-10</th></tr></thead>
+            <tbody>
+              <tr><td>Memory still available to the app</td><td>About 5.36 GB (4.99 GiB), for a small app at that moment</td></tr>
+              <tr><td>Open-file limit</td><td>256 by default; raising it to 10,240 was allowed</td></tr>
+              <tr><td>Apple's loader, macOS-built library</td><td>Refused: incompatible platform</td></tr>
+              <tr><td>MacBridge's loader, same library</td><td>Ran: 42 · 30 · 6 · 8 · 1</td></tr>
+              <tr><td>Anonymous page made executable</td><td>Call returned success; nothing run from it. <strong class="text-paper">UNKNOWN</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>No protection was disabled or worked around. Results cover this device, this development build and this signing setup only.</p>
+      </section>
+
+      <section id="open">
+        <h2>Demonstrated vs. untested</h2>
+        <div class="not-prose mt-8 grid gap-4 md:grid-cols-2">
+          <div class="card p-6">
+            <p class="eyebrow text-ice">Demonstrated</p>
+            <ul class="mt-4 space-y-3 text-[0.95rem] text-ti">
+              <li>Inspection of macOS apps on a physical iPad</li>
+              <li>Own macOS-built ARM64 library loaded and called on an iPad</li>
+              <li>Own Objective-C classes registered and messaged on an iPad</li>
+              <li>ARM64 thread-locals through MacBridge's entry code on an iPad</li>
+              <li>Fixup decoding identical to LLVM across Blender's images</li>
+            </ul>
+          </div>
+          <div class="card p-6 border-dashed">
+            <p class="eyebrow">Untested or open</p>
+            <ul class="mt-4 space-y-3 text-[0.95rem] text-ti">
+              <li>Code signed by another developer (Blender's)</li>
+              <li>App Store, TestFlight or other distribution builds</li>
+              <li>Several dependent libraries on the iPad</li>
+              <li>A standalone macOS program, AppKit code, any macOS app</li>
+              <li>Blender through MacBridge, at any stage, on any device</li>
+            </ul>
+          </div>
+        </div>
+        <p class="mt-10">
+          Sources: <a href={doc('docs/research/loader.md')}>The experimental loader</a> ·
+          <a href={doc('docs/research/objective-c.md')}>Objective-C</a> ·
+          <a href={doc('docs/research/device-probe.md')}>DeviceProbe</a> ·
+          <a href={doc('docs/research/blender.md')}>Blender research</a> ·
+          <a href={doc('STATUS.md')}>Status</a>
+        </p>
+      </section>
+    </article>
+  </div>
+</Base>

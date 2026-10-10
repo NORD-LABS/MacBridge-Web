@@ -1,0 +1,29 @@
+---
+// Research status vocabulary, exactly as defined in ROADMAP.md and docs/evidence.md.
+export type StatusKind =
+  | 'COMPLETE' | 'EXPERIMENTAL' | 'ACTIVE' | 'BLOCKED' | 'UNKNOWN' | 'NOT TESTED' | 'NOT STARTED'
+  | 'PASS' | 'PARTIAL' | 'NOT DEMONSTRATED';
+interface Props { kind: StatusKind; class?: string }
+const { kind, class: cls = '' } = Astro.props;
+
+const tone: Record<StatusKind, string> = {
+  COMPLETE: 'text-ice border-ice/40 bg-ice/[0.07]',
+  PASS: 'text-ice border-ice/40 bg-ice/[0.07]',
+  ACTIVE: 'text-paper border-white/30 bg-white/[0.06]',
+  EXPERIMENTAL: 'text-ti border-white/20 border-dashed',
+  PARTIAL: 'text-ti border-white/20 border-dashed',
+  BLOCKED: 'text-amber border-amber/45 bg-amber/[0.06]',
+  UNKNOWN: 'text-ti-2 border-white/15 border-dotted',
+  'NOT TESTED': 'text-ti-2 border-white/12 border-dotted',
+  'NOT STARTED': 'text-ti-3 border-white/10 border-dotted',
+  'NOT DEMONSTRATED': 'text-ti-2 border-white/12 border-dotted',
+};
+const dot: Record<StatusKind, string> = {
+  COMPLETE: 'bg-ice', PASS: 'bg-ice', ACTIVE: 'bg-paper', EXPERIMENTAL: 'border border-ti',
+  PARTIAL: 'border border-ti', BLOCKED: 'bg-amber', UNKNOWN: 'border border-dotted border-ti-2',
+  'NOT TESTED': 'border border-ti-3', 'NOT STARTED': 'border border-ti-3', 'NOT DEMONSTRATED': 'border border-ti-3',
+};
+---
+<span class={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-medium tracking-[0.1em] ${tone[kind]} ${cls}`}>
+  <i class={`h-1.5 w-1.5 rounded-full ${dot[kind]}`} aria-hidden="true"></i>{kind}
+</span>
