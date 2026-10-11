@@ -1,0 +1,9 @@
+{
+  "name": "macbridge-web",
+  "compatibility_date": "2026-09-01",
+  "account_id": "1c7a9aa924e30bc8334350e6fdf3e8e1",
+  "assets": { "directory": "./dist", "not_found_handling": "404-page", "html_handling": "drop-trailing-slash" },
+  "routes": [{ "pattern": "macbridge.iso-nord.tech", "custom_domain": true }],
+  "workers_dev": true,
+  "preview_urls": false
+}
